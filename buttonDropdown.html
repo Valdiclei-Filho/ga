@@ -68,14 +68,12 @@
       </div>
     </div>
 
-    <!--Diagrama-->
     <div id="sample" class="py-3">
       <div
         id="myDiagramDiv"
         style="border: solid 1px black; width: 100%; height: 50rem"
       ></div>
 
-      <!--Resultado JSON-->
       <div class="py-4">
         Modelo de diagrama salvo em formato JSON, atualizado automaticamente
         após cada alteração, desfazer ou refazer:
@@ -91,7 +89,8 @@
       crossorigin="anonymous"
     ></script>
 
-    <!--Diagrama-->
+    <script src="ler.js"></script>
+
     <script id="code">
       let myDiagram;
       let figureIndex = 0;
@@ -112,12 +111,11 @@
           ModelChanged: (e) => {
             if (e.isTransactionFinished) {
               showModel();
-              localStorage.setItem("diagramModel", myDiagram.model.toJson()); //cada mudança faz o salvamento; e salvamento das linhas das tabelas é na linha 154 do code
+              localStorage.setItem("diagramModel", myDiagram.model.toJson());
             }
           },
         });
 
-        // design da tabela
         const fieldTemplate = new go.Panel("TableRow", {
           background: "transparent",
           fromSpot: go.Spot.Right,
@@ -126,7 +124,7 @@
           toLinkable: true,
           toLinkableDuplicates: true,
           shadowVisible: true,
-          click: (e, item) => {
+          dblclick: (e, item) => {
             const node = item.part;
             if (node !== null) {
               myDiagram.model.addArrayItem(node.data.fields, {
@@ -165,72 +163,78 @@
               font: "13px sans-serif",
               alignment: go.Spot.Left,
               editable: true,
+              textEdited: (textBlock, previousText, newText) => {
+                const item = textBlock.panel.data;
+                item.info = newText;
+                showModel();
+              },
             }).bind("text", "info")
           );
 
-          document
-        .getElementById("createRestritionTable")
-        .addEventListener("click", () => {
-          myDiagram.model.addNodeData({
-            key: dropRestritionTableName,
-            fields: [],
-            loc: "0 0",
+        document
+          .getElementById("createRestritionTable")
+          .addEventListener("click", () => {
+            myDiagram.model.addNodeData({
+              key: dropRestritionTableName,
+              fields: [],
+              loc: "0 0",
+            });
+            const dropdownNode = myDiagram.model.findNodeDataForKey(
+              dropRestritionTableName
+            );
+            if (dropdownNode) {
+              myDiagram.model.addArrayItem(dropdownNode.fields, {
+                name: "==",
+                info: "Igual (Mesmo Tipo)",
+                color: "#FFFFFF",
+              });
+              myDiagram.model.addArrayItem(dropdownNode.fields, {
+                name: "===",
+                info: "Igual (Independente do Tipo)",
+                color: "#FFFFFF",
+              });
+              myDiagram.model.addArrayItem(dropdownNode.fields, {
+                name: "!=",
+                info: "Diferente (Mesmo Tipo)",
+                color: "#FFFFFF",
+              });
+              myDiagram.model.addArrayItem(dropdownNode.fields, {
+                name: "!==",
+                info: "Diferente (Independente do Tipo)",
+                color: "#FFFFFF",
+              });
+              myDiagram.model.addArrayItem(dropdownNode.fields, {
+                name: "<",
+                info: "Menor",
+                color: "#FFFFFF",
+              });
+              myDiagram.model.addArrayItem(dropdownNode.fields, {
+                name: "<=",
+                info: "Menor ou Igual",
+                color: "#FFFFFF",
+              });
+              myDiagram.model.addArrayItem(dropdownNode.fields, {
+                name: ">",
+                info: "Maior",
+                color: "#FFFFFF",
+              });
+              myDiagram.model.addArrayItem(dropdownNode.fields, {
+                name: ">=",
+                info: "Maior ou Igual",
+                color: "#FFFFFF",
+              });
+              myDiagram.model.addArrayItem(dropdownNode.fields, {
+                name: "&&",
+                info: "E",
+                color: "#FFFFFF",
+              });
+              myDiagram.model.addArrayItem(dropdownNode.fields, {
+                name: "||",
+                info: "OU",
+                color: "#FFFFFF",
+              });
+            }
           });
-          const dropdownNode =
-            myDiagram.model.findNodeDataForKey(dropRestritionTableName);
-          if (dropdownNode) {
-            myDiagram.model.addArrayItem(dropdownNode.fields, {
-              name: "==",
-              info: "",
-              color: "#FFFFFF",
-            });
-            myDiagram.model.addArrayItem(dropdownNode.fields, {
-              name: "===",
-              info: "",
-              color: "#FFFFFF",
-            });
-            myDiagram.model.addArrayItem(dropdownNode.fields, {
-              name: "!=",
-              info: "",
-              color: "#FFFFFF",
-            });
-            myDiagram.model.addArrayItem(dropdownNode.fields, {
-              name: "!==",
-              info: "",
-              color: "#FFFFFF",
-            });
-            myDiagram.model.addArrayItem(dropdownNode.fields, {
-              name: "<",
-              info: "",
-              color: "#FFFFFF",
-            });
-            myDiagram.model.addArrayItem(dropdownNode.fields, {
-              name: "<=",
-              info: "",
-              color: "#FFFFFF",
-            });
-            myDiagram.model.addArrayItem(dropdownNode.fields, {
-              name: ">",
-              info: "",
-              color: "#FFFFFF",
-            });
-            myDiagram.model.addArrayItem(dropdownNode.fields, {
-              name: ">=",
-              info: "",
-              color: "#FFFFFF",
-            });
-            myDiagram.model.addArrayItem(dropdownNode.fields, {
-              name: "&&",
-              info: "",
-              color: "#FFFFFF",
-            });
-            myDiagram.model.addArrayItem(dropdownNode.fields, {
-              name: "||",
-              info: "",
-              color: "#FFFFFF",
-            });
-          }
-        });
 
         myDiagram.nodeTemplate = new go.Node("Auto", {
           copyable: true,
@@ -299,6 +303,31 @@
         return modelJson;
       }
 
+      function ler() {
+        const model = JSON.parse(myDiagram.model.toJson());
+
+        const result = [];
+
+        model.linkDataArray.forEach((i) => {
+          model.nodeDataArray.forEach((n) => {
+            n.fields.forEach((fi) => {
+              if (n.key == i.from && fi.name == i.fromPort) {
+                result.push({
+                  from: i.from,
+                  fromInfo: fi.name,
+                  to: i.to,
+                  toPort: i.toPort,
+                });
+              }
+            });
+          });
+        });
+
+        const jsonOutput = JSON.stringify(result, null, 2);
+
+        console.log(jsonOutput);
+      }
+
       function getNextFigure() {
         const figure = figures[figureIndex];
         figureIndex = (figureIndex + 1) % figures.length;
@@ -317,13 +346,13 @@
         }
       });
 
-      document.getElementById("addRow").addEventListener("click", () => {
+      document.getElementById("addRow").addEventListener("dblclick", () => {
         const rowName = document.getElementById("rowName").value;
         const selectedNode = myDiagram.selection.first();
         if (rowName && selectedNode) {
           myDiagram.model.addArrayItem(selectedNode.data.fields, {
-            name: rowName,
-            info: "Informação da linha",
+            name: "Informação da Linha",
+            info: rowName,
             color: "#FFFFFF",
             figure: getNextFigure(),
           });
@@ -344,41 +373,41 @@
             myDiagram.model.findNodeDataForKey(dropdownTableName);
           if (dropdownNode) {
             myDiagram.model.addArrayItem(dropdownNode.fields, {
-              name: "Subtração",
-              info: "",
+              name: "-",
+              info: "Subtração",
               color: "#FFFFFF",
               figure: "rectangle",
             });
             myDiagram.model.addArrayItem(dropdownNode.fields, {
-              name: "Divisão",
-              info: "",
+              name: "/",
+              info: "Divisão",
               color: "#FFFFFF",
               figure: "diamond",
             });
             myDiagram.model.addArrayItem(dropdownNode.fields, {
-              name: "Multiplicação",
-              info: "",
+              name: "*",
+              info: "Multiplicação",
               color: "#FFFFFF",
               figure: "ellipse",
             });
             myDiagram.model.addArrayItem(dropdownNode.fields, {
-              name: "Soma",
-              info: "",
+              name: "+",
+              info: "Soma",
               color: "#FFFFFF",
               figure: "triangle",
             });
           }
         });
 
-        
-
       document.getElementById("saveModel").addEventListener("click", () => {
         const modelJson = showModel();
         localStorage.setItem(diagramModelName, modelJson);
+        ler();
         alert("Modelo salvo com sucesso!");
       });
 
       init();
+      ler();
     </script>
   </body>
 </html>
