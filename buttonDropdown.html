@@ -303,6 +303,64 @@
         return modelJson;
       }
 
+      function envioPy() {
+        const modelJson = ler();
+        const modelJson2 = JSON.parse(modelJson);
+
+        const profit = [];
+        const weight = [];
+        let capacity = 0; 
+
+        modelJson2.forEach((field) => {
+            if (field.from === "Profit") profit.push(Number(field.fromInfo));
+            if (field.from === "Weight") weight.push(Number(field.fromInfo));
+            if (field.from === "Capacity") {
+              capacity = parseFloat(field.fromInfo);
+            }
+          });
+          
+          const requestData = {
+          profit: profit,
+          weight: weight,
+          capacity: capacity,
+        };
+
+        const req = fetch("http://127.0.0.1:5000/ga", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(requestData)
+        })
+          .then((response) => {
+            if (!response.ok) {
+              throw new Error("Erro ao enviar dados para a API");
+            }
+            return response.json();
+          })
+          .then((data) => {
+            let opcoes = "";
+            let nome = "";
+            data.resultado.forEach(opcao => {
+              modelJson2.forEach(element => {
+                nome = element.from;
+                if(nome == "Produtos" || nome == "Profit"){
+                  console.log('enter', element);
+                  
+                  opcoes += "\n" + element.info;
+                }
+              });
+              
+            });
+            alert(`Escolha os produtos ${opcoes}`);
+          })
+          .catch((error) => {
+            alert("Erro ao enviar dados para a API.");
+          });
+          
+          return req
+      };
+      
       function ler() {
         const model = JSON.parse(myDiagram.model.toJson());
 
@@ -317,6 +375,7 @@
                   fromInfo: fi.name,
                   to: i.to,
                   toPort: i.toPort,
+                  info: fi.info,
                 });
               }
             });
@@ -325,7 +384,7 @@
 
         const jsonOutput = JSON.stringify(result, null, 2);
 
-        console.log(jsonOutput);
+        return jsonOutput;
       }
 
       function getNextFigure() {
@@ -399,11 +458,12 @@
           }
         });
 
-      document.getElementById("saveModel").addEventListener("click", () => {
+      document.getElementById("saveModel").addEventListener("click", async () => {
+        await envioPy();
         const modelJson = showModel();
         localStorage.setItem(diagramModelName, modelJson);
         ler();
-        alert("Modelo salvo com sucesso!");
+        // alert("Modelo salvo com sucesso!");
       });
 
       init();
